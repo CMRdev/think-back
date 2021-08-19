@@ -11,6 +11,11 @@ export default new Router({
       component: require('@/components/LandingPage').default
     },
     {
+      path: '/editor/:id',
+      name: 'edit-window',
+      component: require('@/components/EditWindow').default
+    },
+    {
       path: '*',
       redirect: '/'
     }

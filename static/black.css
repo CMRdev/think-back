@@ -1,0 +1,7 @@
+:root {
+    --color-selected: rgb(180,159,123);
+    --color-text: hsla(0,0%,100%,.65);
+    --color-bg: rgb(32,32,32);
+    --color-bg-simple: #303030;
+    --color-bg-primary: hsla(0,0%,100%,.07);
+}

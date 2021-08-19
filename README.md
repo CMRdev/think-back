@@ -1,6 +1,9 @@
 # think-back
 
 > An electron-vue project
+### Storage
+
+- 目前存储在内部的indexDB中。借助`Dexie.js`操作IndexDB.不考虑接入sqlite3 or其他外部数据库，因为够用也不需要暴露太多东西处理。
 
 #### Build Setup
 
