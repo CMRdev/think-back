@@ -1,100 +1,481 @@
 <template>
-  <div class="landing-page">
-    <section class="title-area">
-      <div class="search-area">
-        <select v-model="filterType">
-          <option value="all">ALL</option>
-          <template v-for="(type, index) in typeList">
-            <option :key="index" :value="type.value">{{ type.label }}</option>
+  <div id="pager">
+    <header>
+      <div class='search-area'>
+        <select v-model="filterType" @change="search(true)">
+          <option value='all'>ALL</option>
+          <template v-for="(language, index) in languages">
+            <option :key="index" :value="language.value">{{language.label}}</option>
           </template>
         </select>
-        <input v-model="filterKeyword" placeholder="请输入标题" />
+        <input v-model="filterKeyword" @input="search(true)" placeholder="Search thinks！" />
       </div>
-      <div class="operation-btn" v-if=" filterType != 'all' || (filterKeyword != null && filterKeyword.length > 0) " > Clear&nbsp; </div>
-      <div class="operation-btn">&nbsp;Create</div>
-    </section>
-    <section class="content-area">
-      <div class="left-body"></div>
-      <div class="right-list"></div>
-    </section>
+      <div class='operation'>
+        <div class='operation-btn' v-if='filterType !="all" || filterKeyword != null && filterKeyword.length > 0'
+          @click="clear">Clear&nbsp;</div>
+        <div class='operation-btn' @click="goToEditor">&nbsp;Create</div>
+      </div>
+    </header>
+    <main>
+      <div class="main-left">
+        <div class="left-title"></div>
+        <div class="left-date"></div>
+        <div class="left-content"></div>
+      </div>
+      <div class="main-right">
+        <div v-if='searching' class='tips-msg'>
+          <div class="pswp__preloader__icn">
+            <div class="pswp__preloader__cut">
+              <div class="pswp__preloader__donut"></div>
+            </div>
+          </div>&nbsp;&nbsp;LOADING
+        </div>
+        <div v-if='!searching && thinks.length == 0' class='tips-msg'>No records.</div>
+        <ul v-show='!searching'>
+          <template v-for='(think, index) in thinks'>
+            <li :key="index">
+              <div class='title text-ellipsis' @click="goToEditor(think.id)">{{ think.name || '--' }}</div>
+              <div class='date'>{{think.date | formateDate2}}</div>
+              <div class='operation'>
+                <span class='operation-btn' @click="goToEditor(think.id)">Edit</span>
+                <span class='operation-btn' @click="remove(think.id)">Remove</span>
+              </div>
+            </li>
+          </template>
+        </ul>
+      </div>
+    </main>
+    <footer>
+      <theme-selector></theme-selector>
+      <div class='pager' v-if='totalRecords > 0'>
+        <div class='operation' style='justify-content:start'>
+          <div class='sort-selector'>
+            <span>Sort:&nbsp;</span>
+            <select v-model="filterOrder" @change="search(true)">
+              <option value='date'>Recently updated</option>
+              <option value='id'>Recently created</option>
+            </select>
+          </div>
+          <select v-model='pageSize' @change="search(true)" style='height: 25px;line-height:25px'>
+            <option value=10>10</option>
+            <option value=30>30</option>
+            <option value=90>90</option>
+            <option value=120>120</option>
+          </select>
+          <div class='operation-text'>
+            &nbsp;&nbsp;total:&nbsp;{{totalRecords}}&nbsp;&nbsp;{{currentPage}}/{{totalPage}}&nbsp;&nbsp;</div>
+          <span class='operation-btn' v-if='currentPage != 1' @click="pageQuery(currentPage--)">prev</span>
+          <span class='operation-btn' v-if='currentPage < totalPage' @click="pageQuery(currentPage++)">next</span>
+        </div>
+      </div>
+    </footer>
   </div>
 </template>
 
 <script>
+import ThemeSelector from './Theme'
+import LanguageSupport from './mixins/Language'
 export default {
-  name: 'LandingPage',
-  components: {},
-  props: {},
+  name: 'landing-page',
+  mixins: [LanguageSupport],
+  components: { ThemeSelector },
   data () {
     return {
+      totalRecords: 0,
+      currentPage: 1,
+      totalPage: 0,
+      pageSize: 10,
+      thinks: [],
       filterType: 'all',
-      filterKeyword: '',
-      typeList: [
-        { label: 'English', value: 'eng' }
-      ]
+      filterKeyword: null,
+      filterOrder: 'id',
+      searchTimeout: null,
+      searching: false,
+      newVersion: false,
+      currentTheme: 0
     }
   },
-  watch: {},
-  computed: {},
-  methods: {},
-  created () { },
-  mounted () { }
-}
-</script>
-
-<style lang="scss" scoped>
-.landing-page {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  .title-area {
-    width: 100%;
-    height: 40px;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    .search-area {
-      flex: 1;
-      height: 30px;
-      display: flex;
-      flex-direction: row;
-      align-items: center;
-      > select {
-        height: 30px;
-        width: 120px;
-        margin-right: 10px;
-        border-radius: 3px;
+  methods: {
+    clear () {
+      this.filterType = 'all'
+      this.filterKeyword = null
+      this.search(true)
+    },
+    themeSelector (themeKey) {
+      this.currentTheme = themeKey
+      const link = document.querySelector('link[name="theme"]')
+      if (this.currentTheme === 0) {
+        link.href = '/static/black.css'
+      } else {
+        link.href = '/static/light.css'
       }
-      > input {
-        height: 24px;
-        flex: 1;
-        padding-left: 10px;
+      // flush to localstorage.
+      window.localStorage.setItem('CURRENT_THEME', this.currentTheme)
+    },
+    updatePager () {
+      this.totalPage = this.totalRecords % this.pageSize === 0 ? this.totalRecords / this.pageSize : Math.ceil(this.totalRecords / this.pageSize)
+    },
+    getPagerOffset () {
+      return (this.currentPage - 1) * this.pageSize
+    },
+    goToEditor (id) {
+      this.$router.push('/editor/' + id)
+    },
+    pageQuery (page) {
+      console.log(this.currentPage)
+      this.search()
+    },
+    search (reset = false) {
+      if (reset) {
+        this.currentPage = 1
       }
+      this.searching = true
+      if (this.searchTimeout) {
+        clearTimeout(this.searchTimeout)
+      }
+      this.searchTimeout = setTimeout(() => {
+        this.loadList()
+      }, 500)
+    },
+    loadList () {
+      this.thinks = []
+      if (this.filterType !== 'all' && this.filterKeyword) {
+        this.$thinkbackDB.think
+          .filter(record => {
+            return record.type === this.filterType
+          })
+          .filter(record => {
+            return JSON.stringify(record).indexOf(this.filterKeyword) > -1
+          })
+          .count(res => {
+            this.totalRecords = res
+            this.$thinkbackDB.think.orderBy(this.filterOrder).desc()
+              .filter(record => record.type === this.filterType)
+              .filter(record => {
+                return JSON.stringify(record).indexOf(this.filterKeyword) > -1
+              })
+              .offset(this.getPagerOffset())
+              .limit(this.pageSize)
+              .toArray((thinks) => {
+                this.bindList(thinks)
+              })
+          })
+      } else if (this.filterType !== 'all') {
+        this.$thinkbackDB.think
+          .filter(record => { return record.type === this.filterType })
+          .count(res => {
+            this.totalRecords = res
+            this.$thinkbackDB.think.orderBy(this.filterOrder).desc()
+              .filter(record => { return record.type === this.filterType })
+              .offset(this.getPagerOffset())
+              .limit(this.pageSize)
+              .toArray((thinks) => {
+                this.bindList(thinks)
+              })
+          })
+      } else if (this.filterKeyword) {
+        this.$thinkbackDB.think
+          .filter(record => {
+            return JSON.stringify(record).indexOf(this.filterKeyword) > -1
+          }).count(res => {
+            this.totalRecords = res
+            this.$thinkbackDB.think.orderBy(this.filterOrder).desc()
+              .filter(record => {
+                return JSON.stringify(record).indexOf(this.filterKeyword) > -1
+              }).offset(this.getPagerOffset()).limit(this.pageSize)
+              .toArray((thinks) => {
+                this.bindList(thinks)
+              })
+          })
+      } else {
+        this.$thinkbackDB.think.count(res => {
+          this.totalRecords = res
+          this.$thinkbackDB.think.orderBy(this.filterOrder).desc()
+            .offset(this.getPagerOffset()).limit(this.pageSize)
+            .toArray((thinks) => {
+              this.bindList(thinks)
+            })
+        })
+      }
+    },
+    bindList (sinppets) {
+      for (let think of sinppets) {
+        this.thinks.push(think)
+      }
+      this.searching = false
+      this.updatePager()
+    },
+    remove (id) {
+      require('electron').remote.dialog.showMessageBox({
+        type: 'error',
+        buttons: ['ok', 'cancel'],
+        title: 'Alert',
+        detail: 'Are your sure to remove this thinks?'
+      }, (btn) => {
+        if (btn === 0) {
+          this.$thinkbackDB.think.delete(id).then(status => {
+            this.loadList()
+          })
+        }
+      })
     }
-    .operation-btn {
-      width: 80px;
-      height: 28px;
-      margin-left: 10px;
-      border: 1px solid #ccc;
-      border-radius: 3px;
-      text-align: center;
-      line-height: 30px;
+  },
+  mounted () {
+    this.loadList()
+    this.newVersion = window.localStorage.getItem('NEW_VERSION') === '1'
+  },
+  activated () {
+    // hook for keep alive components acitved.
+    this.search(true)
+  },
+  filters: {
+    formatDate (time) {
+      let date = new Date(time)
+      let fmt = 'yyyy/MM/dd hh:mm:ss'
+      const o = {
+        'M+': date.getMonth() + 1, // 月份
+        'd+': date.getDate(), // 日
+        'h+': date.getHours(), // 小时
+        'm+': date.getMinutes(), // 分
+        's+': date.getSeconds(), // 秒
+        'q+': Math.floor((date.getMonth() + 3) / 3), // 季度
+        'S': date.getMilliseconds() // 毫秒
+      }
+      if (/(y+)/.test(fmt)) {
+        fmt = fmt.replace(RegExp.$1, (date.getFullYear() + '').substr(4 - RegExp.$1.length))
+      }
+      for (let k in o) {
+        if (new RegExp('(' + k + ')').test(fmt)) {
+          fmt = fmt.replace(RegExp.$1, (RegExp.$1.length === 1) ? (o[k]) : (('00' + o[k]).substr(('' + o[k]).length)))
+        }
+      }
+      return fmt
+    },
+    formateDate2 (data) {
+      // 将字符串转换成时间格式
+      let timePublish = new Date(data)
+      let timeNow = new Date()
+      let minute = 1000 * 60
+      let hour = minute * 60
+      let day = hour * 24
+      let month = day * 30
+      let diffValue = timeNow - timePublish
+      let diffMonth = diffValue / month
+      let diffWeek = diffValue / (7 * day)
+      let diffDay = diffValue / day
+      let diffHour = diffValue / hour
+      let diffMinute = diffValue / minute
+      let result
+      if (diffValue < 0) {
+        result = this.formatDate(data)
+      } else if (diffMonth > 3) {
+        result = this.formatDate(data)
+      } else if (diffMonth > 1) {
+        result = parseInt(diffMonth) + ' months ago.'
+      } else if (diffWeek > 1) {
+        result = parseInt(diffWeek) + ' weeks ago.'
+      } else if (diffDay > 1) {
+        result = parseInt(diffDay) + ' days ago.'
+      } else if (diffHour > 1) {
+        result = parseInt(diffHour) + ' hours ago.'
+      } else if (diffMinute > 1) {
+        result = parseInt(diffMinute) + ' minutes ago.'
+      } else {
+        result = 'Just now.'
+      }
+      return result
     }
   }
-  .content-area {
-    width: 100%;
-    flex: 1;
-    .left-body {
-      width: 80%;
-      height: 100%;
-      padding: 20px;
-      overflow: auto;
-    }
-    .right-list {
-      width: 20%;
-      height: 100%;
-    }
+}
+</script>
+<style>
+#pager main ul {
+  width: 100%;
+  height: auto;
+  overflow: auto;
+  box-sizing: border-box;
+  padding: 0px;
+}
+#pager main .tips-msg {
+  flex: 1;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  display: flex;
+}
+#pager main ul li {
+  padding-left: 10px;
+  width: 100%;
+  height: 40px;
+  line-height: 40px;
+  box-sizing: border-box;
+  border: 1px solid var(--color-bg);
+  list-style-type: none;
+  display: flex;
+  flex-direction: row;
+  border-radius: 5px;
+  font-size: 18px;
+}
+#pager main ul li:hover {
+  border: 1px solid var(--color-selected);
+  cursor: pointer;
+}
+
+#pager main ul li .title {
+  width: 150px;
+  height: 100%;
+  overflow: hidden;
+}
+
+#pager main ul li .type {
+  width: 80px;
+  height: 100%;
+  padding-right: 3px;
+  padding-left: 3px;
+}
+#pager main ul li .type span {
+  border-color: var(--color-selected);
+  background-color: var(--color-selected);
+  color: var(--color-bg);
+  padding: 3px;
+  border-radius: 3px;
+}
+
+#pager main ul li .title:hover {
+  text-decoration: underline;
+  color: var(--color-selected);
+}
+
+#pager main ul li .description {
+  flex: 1;
+  height: auto;
+  display: flex;
+  overflow: hidden;
+  font-style: italic;
+}
+#pager main ul li .date {
+  width: 200px;
+  height: auto;
+  display: flex;
+  overflow: hidden;
+  justify-content: center;
+}
+
+#pager header .search-area {
+  flex: 1;
+  display: flex;
+  height: 100%;
+  align-items: center;
+  padding-left: 10px;
+}
+
+#pager header .search-area select {
+  width: 120px;
+}
+#pager header .search-area input {
+  margin-left: 10px;
+}
+.create-text {
+  text-decoration: underline;
+  font-weight: bolder;
+}
+.create-text:hover {
+  color: var(--color-selected);
+  cursor: pointer;
+}
+
+.sort-selector {
+  display: flex;
+  width: auto;
+  height: 32px;
+  justify-content: space-around;
+  align-items: center;
+  padding: 0px 3px;
+  box-sizing: border-box;
+  border-radius: 5px;
+  margin-right: 5px;
+}
+.sort-selector select {
+  outline: none;
+  border: none;
+  height: 25px;
+  width: auto;
+  line-height: 25px;
+}
+
+/* loading */
+.pswp__preloader__icn {
+  opacity: 0.75;
+  width: 24px;
+  height: 24px;
+  -webkit-animation: clockwise 500ms linear infinite;
+  animation: clockwise 500ms linear infinite;
+}
+
+/* The idea of animating inner circle is based on Polymer loading indicator by Keanu Lee https://blog.keanulee.com/2014/10/20/the-tale-of-three-spinners.html */
+.pswp__preloader__cut {
+  position: relative;
+  width: 12px;
+  height: 24px;
+  overflow: hidden;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.pswp__preloader__donut {
+  box-sizing: border-box;
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--color-text);
+  border-radius: 50%;
+  border-left-color: transparent;
+  border-bottom-color: transparent;
+  position: absolute;
+  top: 0;
+  left: 0;
+  background: none;
+  margin: 0;
+  -webkit-animation: donut-rotate 1000ms cubic-bezier(0.4, 0, 0.22, 1) infinite;
+  animation: donut-rotate 1000ms cubic-bezier(0.4, 0, 0.22, 1) infinite;
+}
+
+@-webkit-keyframes clockwise {
+  0% {
+    -webkit-transform: rotate(0deg);
+  }
+  100% {
+    -webkit-transform: rotate(360deg);
+  }
+}
+@keyframes clockwise {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+@-webkit-keyframes donut-rotate {
+  0% {
+    -webkit-transform: rotate(0);
+  }
+  50% {
+    -webkit-transform: rotate(-140deg);
+  }
+  100% {
+    -webkit-transform: rotate(0);
+  }
+}
+@keyframes donut-rotate {
+  0% {
+    transform: rotate(0);
+  }
+  50% {
+    transform: rotate(-140deg);
+  }
+  100% {
+    transform: rotate(0);
   }
 }
 </style>

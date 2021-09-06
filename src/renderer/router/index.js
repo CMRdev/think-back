@@ -12,8 +12,8 @@ export default new Router({
     },
     {
       path: '/editor/:id',
-      name: 'edit-window',
-      component: require('@/components/EditWindow').default
+      name: 'editor-page',
+      component: require('@/components/Editorpage').default
     },
     {
       path: '*',
