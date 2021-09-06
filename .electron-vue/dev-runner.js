@@ -64,9 +64,9 @@ function startRenderer () {
       {
         contentBase: path.join(__dirname, '../'),
         quiet: true,
-        hot: true,
+        // hot: true,
         before (app, ctx) {
-          // app.use(hotMiddleware)
+          app.use(hotMiddleware) // 热中间件，热更新
           ctx.middleware.waitUntilValid(() => {
             resolve()
           })

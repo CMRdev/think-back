@@ -10,7 +10,7 @@
 ``` bash
 # clone to local dir.
 git clone xxx
-cd easy-snippets
+cd think-back
 # Using yarn install all dependencies.
 yarn
 npm run dev

@@ -78,7 +78,9 @@ export default {
       this.onCmReady()
     },
     onCmFocus () { },
-    onCmCodeChange () { },
+    onCmCodeChange (value) {
+      this.$set(this.think, 'content', value)
+    },
     typeChange () {
       this.codemirror && this.codemirror.setOption('mode', this.think.type)
       this.codemirror && this.codemirror.refresh()
@@ -87,7 +89,6 @@ export default {
       this.$router.push('/')
     },
     save () {
-      this.think.content = this.codemirror && this.codemirror.getValue()
       // simple form check.
       if (!this.think.title) {
         alert('The think title can not be empty!')
