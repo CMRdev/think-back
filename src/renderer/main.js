@@ -6,6 +6,7 @@ import router from './router'
 import store from './store'
 import Dexie from 'dexie' // 操作数据库
 import VueCodemirror from 'vue-codemirror' // 代码高亮
+import SimpleSchedule from 'simple-schedule' // 定时任务
 
 import 'codemirror/theme/ambiance.css'
 import 'codemirror/lib/codemirror.css'
@@ -52,6 +53,7 @@ Vue.config.productionTip = false
 Vue.use(VueCodemirror, {
   options: { theme: 'base16-dark' }
 })
+Vue.use(SimpleSchedule)
 
 // create web sql
 const thinkbackDB = new Dexie('think-back')
@@ -59,6 +61,8 @@ thinkbackDB.version(0.1).stores({
   think: '++id, title, type, content, date, description' // 表think及表中字段
 })
 Vue.prototype.$thinkbackDB = thinkbackDB
+// 初始化eventbus
+Vue.prototype.$EventBus = new Vue()
 
 /* eslint-disable no-new */
 new Vue({

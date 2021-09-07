@@ -20,7 +20,7 @@
       <div class="main-left">
         <div v-if='!searching && !selectedThink' class='tips-msg'>No records.</div>
         <div v-else style="height: 100%;">
-          <div class="left-title text-ellipsis">{{ selectedThink.title }}</div>
+          <div class="left-title text-ellipsis" :title="selectedThink.title">{{ selectedThink.title }}</div>
           <div class="left-date">更新日期：{{ selectedThink.date | formatDate }}</div>
           <div class="left-content">
             <codemirror ref="myCm" :value="selectedThink.content" :options="cmOptions" @ready="onCmReady">
@@ -39,7 +39,7 @@
         <div v-if='!searching && thinks.length == 0' class='tips-msg'>No records.</div>
         <ul v-show='!searching'>
           <template v-for='(think, index) in thinks'>
-            <li :key="index" @click="selectItem(think, index)">
+            <li :key="index" @click="selectItem(think, index)" :class="{'selected': selectedThink.id === think.id }">
               <div class='number'>{{ (currentPage - 1) * pageSize + index + 1 }}.</div>
               <div class='title text-ellipsis'>{{ think.title || '--' }}</div>
               <div class='operation'>
@@ -52,7 +52,7 @@
       </div>
     </main>
     <footer>
-      <theme-selector></theme-selector>
+      <theme-selector @themeChange='themeChange'></theme-selector>
       <div class='pager' v-if='totalRecords > 0'>
         <div class='operation' style='justify-content:start'>
           <div class='sort-selector'>
@@ -109,10 +109,23 @@ export default {
         height: '100%',
         readOnly: true,
         nocursor: true
-      }
+      },
+      count: 0
     }
   },
   methods: {
+    themeChange () {
+      this.refreshTheme()
+      this.onCmReady()
+    },
+    refreshTheme () {
+      const currentTheme = Number(window.localStorage.getItem('CURRENT_THEME'))
+      if (currentTheme === 0) {
+        this.cmOptions.theme = 'base16-dark'
+      } else {
+        this.cmOptions.theme = 'base16-light'
+      }
+    },
     onCmReady () {
       this.codemirror && this.codemirror.setOption('theme', this.cmOptions.theme)
       this.codemirror && this.codemirror.refresh()
@@ -222,9 +235,7 @@ export default {
       }
     },
     bindList (thinks) {
-      for (let think of thinks) {
-        this.thinks.push(think)
-      }
+      this.thinks = thinks
       this.searching = false
       this.selectItem(this.thinks.length && this.thinks[0])
       this.updatePager()
@@ -245,11 +256,20 @@ export default {
           })
         }
       })
+    },
+    changeThink () {
+      if (this.thinks && this.thinks.length > this.count) {
+        this.selectItem(this.thinks[this.count])
+        this.count++
+      } else if (this.thinks && this.thinks.length <= this.count) {
+        this.count = 0
+      }
     }
   },
   mounted () {
     this.loadList()
     this.newVersion = window.localStorage.getItem('NEW_VERSION') === '1'
+    this.$EventBus.$on('10seconds', this.changeThink)
   },
   activated () {
     // hook for keep alive components acitved.
@@ -307,8 +327,11 @@ export default {
       &::-webkit-scrollbar {
         width: 0;
       }
+      /deep/ .vue-codemirror {
+        height: 100% !important;
+      }
       /deep/ .CodeMirror {
-        height: 500px !important;
+        height: 100% !important;
         .CodeMirror-vscrollbar {
           width: 0;
         }
@@ -326,7 +349,18 @@ export default {
     &::-webkit-scrollbar {
       width: 0;
     }
+    ul {
+      &::-webkit-scrollbar {
+        height: 0;
+      }
+      .selected {
+        background-color: var(--color-bg-primary);
+        border-bottom: 1px solid var(--color-selected);
+        border-top: 1px solid var(--color-selected);
+      }
+    }
     ul li {
+      min-width: 200px;
       display: flex;
       flex-direction: row;
       border-bottom: 1px solid rgb(65,65,65);
@@ -360,7 +394,7 @@ export default {
   display: flex;
 }
 #pager main ul li {
-  padding-left: 10px;
+  padding: 0 10px;
   width: 100%;
   height: 40px;
   line-height: 40px;
@@ -372,7 +406,8 @@ export default {
   font-size: 18px;
 }
 #pager main ul li:hover {
-  // border: 1px solid var(--color-selected);
+  border-bottom: 1px solid var(--color-selected);
+  border-top: 1px solid var(--color-selected);
   cursor: pointer;
 }
 

@@ -9,9 +9,22 @@
 <script>
   export default {
     name: 'think-back',
-    methods: {
-    },
-    created () {
+    mounted () {
+      var _this = this
+      _this.$schedule.init({
+        tasks: {
+          // '1seconds': 1000,
+          // '3seconds': 3000,
+          // '5seconds': 5000,
+          '10seconds': 10000
+          // '30seconds': 30000
+        },
+        callBack: function (params) {
+          _this.$EventBus.$emit(params.taskId, { taskId: params.taskId, mode: params.mode })
+        }
+      })
+      // 开启定时任务
+      _this.$schedule.start()
     }
   }
 </script>
@@ -57,7 +70,7 @@
   #pager main {
     flex: 1;
     width: 100%;
-    padding: 0px 20px;
+    padding: 0px 10px 0 20px;
     box-sizing: border-box;
     overflow-x: hidden;
     overflow-y: auto;
