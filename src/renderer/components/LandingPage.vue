@@ -18,9 +18,15 @@
     </header>
     <main>
       <div class="main-left">
-        <div class="left-title"></div>
-        <div class="left-date"></div>
-        <div class="left-content"></div>
+        <div v-if='!searching && !selectedThink' class='tips-msg'>No records.</div>
+        <div v-else style="height: 100%;">
+          <div class="left-title text-ellipsis">{{ selectedThink.title }}</div>
+          <div class="left-date">更新日期：{{ selectedThink.date | formatDate }}</div>
+          <div class="left-content">
+            <codemirror ref="myCm" :value="selectedThink.content" :options="cmOptions" @ready="onCmReady">
+            </codemirror>
+          </div>
+        </div>
       </div>
       <div class="main-right">
         <div v-if='searching' class='tips-msg'>
@@ -33,9 +39,9 @@
         <div v-if='!searching && thinks.length == 0' class='tips-msg'>No records.</div>
         <ul v-show='!searching'>
           <template v-for='(think, index) in thinks'>
-            <li :key="index">
-              <div class='title text-ellipsis' @click="goToEditor(think.id)">{{ think.name || '--' }}</div>
-              <div class='date'>{{think.date | formateDate2}}</div>
+            <li :key="index" @click="selectItem(think, index)">
+              <div class='number'>{{ (currentPage - 1) * pageSize + index + 1 }}.</div>
+              <div class='title text-ellipsis'>{{ think.title || '--' }}</div>
               <div class='operation'>
                 <span class='operation-btn' @click="goToEditor(think.id)">Edit</span>
                 <span class='operation-btn' @click="remove(think.id)">Remove</span>
@@ -86,16 +92,31 @@ export default {
       totalPage: 0,
       pageSize: 10,
       thinks: [],
+      selectedThink: {},
       filterType: 'all',
       filterKeyword: null,
       filterOrder: 'id',
       searchTimeout: null,
       searching: false,
       newVersion: false,
-      currentTheme: 0
+      currentTheme: 0,
+      cmOptions: {
+        tabSize: 4,
+        mode: 'text/javascript',
+        theme: 'base16-dark',
+        lineNumbers: true,
+        line: true,
+        height: '100%',
+        readOnly: true,
+        nocursor: true
+      }
     }
   },
   methods: {
+    onCmReady () {
+      this.codemirror && this.codemirror.setOption('theme', this.cmOptions.theme)
+      this.codemirror && this.codemirror.refresh()
+    },
     clear () {
       this.filterType = 'all'
       this.filterKeyword = null
@@ -106,8 +127,10 @@ export default {
       const link = document.querySelector('link[name="theme"]')
       if (this.currentTheme === 0) {
         link.href = '/static/black.css'
+        this.cmOptions.theme = 'base16-dark'
       } else {
         link.href = '/static/light.css'
+        this.cmOptions.theme = 'base16-light'
       }
       // flush to localstorage.
       window.localStorage.setItem('CURRENT_THEME', this.currentTheme)
@@ -135,7 +158,7 @@ export default {
       }
       this.searchTimeout = setTimeout(() => {
         this.loadList()
-      }, 500)
+      }, 300)
     },
     loadList () {
       this.thinks = []
@@ -198,19 +221,23 @@ export default {
         })
       }
     },
-    bindList (sinppets) {
-      for (let think of sinppets) {
+    bindList (thinks) {
+      for (let think of thinks) {
         this.thinks.push(think)
       }
       this.searching = false
+      this.selectItem(this.thinks.length && this.thinks[0])
       this.updatePager()
+    },
+    selectItem (item, index) {
+      this.selectedThink = item
     },
     remove (id) {
       require('electron').remote.dialog.showMessageBox({
         type: 'error',
         buttons: ['ok', 'cancel'],
         title: 'Alert',
-        detail: 'Are your sure to remove this thinks?'
+        detail: 'Are your sure to remove this think?'
       }, (btn) => {
         if (btn === 0) {
           this.$thinkbackDB.think.delete(id).then(status => {
@@ -230,8 +257,9 @@ export default {
   },
   filters: {
     formatDate (time) {
+      if (!time) return '--'
       let date = new Date(time)
-      let fmt = 'yyyy/MM/dd hh:mm:ss'
+      let fmt = 'yyyy-MM-dd hh:mm:ss'
       const o = {
         'M+': date.getMonth() + 1, // 月份
         'd+': date.getDate(), // 日
@@ -250,45 +278,73 @@ export default {
         }
       }
       return fmt
-    },
-    formateDate2 (data) {
-      // 将字符串转换成时间格式
-      let timePublish = new Date(data)
-      let timeNow = new Date()
-      let minute = 1000 * 60
-      let hour = minute * 60
-      let day = hour * 24
-      let month = day * 30
-      let diffValue = timeNow - timePublish
-      let diffMonth = diffValue / month
-      let diffWeek = diffValue / (7 * day)
-      let diffDay = diffValue / day
-      let diffHour = diffValue / hour
-      let diffMinute = diffValue / minute
-      let result
-      if (diffValue < 0) {
-        result = this.formatDate(data)
-      } else if (diffMonth > 3) {
-        result = this.formatDate(data)
-      } else if (diffMonth > 1) {
-        result = parseInt(diffMonth) + ' months ago.'
-      } else if (diffWeek > 1) {
-        result = parseInt(diffWeek) + ' weeks ago.'
-      } else if (diffDay > 1) {
-        result = parseInt(diffDay) + ' days ago.'
-      } else if (diffHour > 1) {
-        result = parseInt(diffHour) + ' hours ago.'
-      } else if (diffMinute > 1) {
-        result = parseInt(diffMinute) + ' minutes ago.'
-      } else {
-        result = 'Just now.'
-      }
-      return result
     }
   }
 }
 </script>
-<style>
+<style lang="scss" scoped>
+#pager main {
+  display: flex;
+  flex-direction: row;
+  .main-left {
+    width: 70%;
+    height: 100%;
+    .left-title {
+      width: 100%;
+      height: 30px;
+      font-size: 20px;
+      text-align: center;
+      line-height: 30px;
+    }
+    .left-date {
+      text-align: center;
+    }
+    .left-content {
+      width: 100%;
+      height: calc(100% - 50px);
+      padding: 10px 10px 10px 0;
+      box-sizing: border-box;
+      &::-webkit-scrollbar {
+        width: 0;
+      }
+      /deep/ .CodeMirror {
+        height: 500px !important;
+        .CodeMirror-vscrollbar {
+          width: 0;
+        }
+        .CodeMirror-hscrollbar {
+          height: 0;
+        }
+      }
+    }
+  }
+  .main-right {
+    flex: 1;
+    height: 100%;
+    border-left: 1px solid rgb(65,65,65);
+    overflow: auto;
+    &::-webkit-scrollbar {
+      width: 0;
+    }
+    ul li {
+      display: flex;
+      flex-direction: row;
+      border-bottom: 1px solid rgb(65,65,65);
+      .title {
+        flex: 1;
+      }
+      .number {
+        width: 30px;
+        text-align: center;
+        color: var(--color-selected);
+      }
+      .operation {
+        width: 110px;
+      }
+    }
+  }
+}
+
 #pager main ul {
   width: 100%;
   height: auto;
@@ -313,16 +369,15 @@ export default {
   list-style-type: none;
   display: flex;
   flex-direction: row;
-  border-radius: 5px;
   font-size: 18px;
 }
 #pager main ul li:hover {
-  border: 1px solid var(--color-selected);
+  // border: 1px solid var(--color-selected);
   cursor: pointer;
 }
 
 #pager main ul li .title {
-  width: 150px;
+  min-width: 50px;
   height: 100%;
   overflow: hidden;
 }
@@ -366,7 +421,7 @@ export default {
   display: flex;
   height: 100%;
   align-items: center;
-  padding-left: 10px;
+  padding-left: 20px;
 }
 
 #pager header .search-area select {

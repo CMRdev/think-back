@@ -52,7 +52,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding-right: 10px;
+    padding-right: 20px;
   }
   #pager main {
     flex: 1;
@@ -68,6 +68,7 @@
   #pager footer {
     height: 45px;
     width: 100%;
+    padding-right: 10px;
     box-sizing: border-box;
     border-top: 1px solid rgb(65,65,65);
     display: flex;
@@ -77,7 +78,7 @@
   /* button */
   .operation {
     width: auto;
-    min-width: 160px;
+    min-width: 60px;
     height: 100%;
     display: flex;
     align-items: center;
@@ -89,7 +90,7 @@
     padding: 5px;
     height: 14px;
     line-height: 14px;
-    margin-right: 10px;
+    margin-left: 10px;
     border-radius: 5px;
   }
   .operation .operation-text {

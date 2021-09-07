@@ -46,13 +46,12 @@ export default {
 <style>
   .theme-operation {
     width: auto;
-    height: 25px;
+    height: 24px;
     display: flex;
     align-items: center;
     margin-left: 20px;
     border-radius: 5px;
     box-sizing: border-box;
-    padding: 3px;
     font-size: 12px;
   }
   .theme-operation .btn-group {

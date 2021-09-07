@@ -155,7 +155,7 @@ export default {
   }
 }
 </script>
-<style>
+<style lang="scss" scoped>
 .editor-attr {
   width: 100%;
   height: 140px;
@@ -193,19 +193,24 @@ export default {
   width: 100%;
   height: calc(100% - 120px);
   overflow-y: auto;
-  padding-bottom: 10px;
+  padding-bottom: 20px;
   box-sizing: border-box;
+  &::-webkit-scrollbar {
+    width: 0;
+  }
 }
 
 .vue-codemirror {
-  height: auto;
-  min-height: 300px !important;
-}
-.CodeMirror {
-  height: 100% !important;
-  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto,
-    Helvetica Neue, Arial, Noto Sans, sans-serif, Apple Color Emoji,
-    Segoe UI Emoji, Segoe UI Symbol, Noto Color Emoji !important;
+  height: 100%;
+  /deep/ .CodeMirror {
+    height: 100% !important;
+    font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto,
+      Helvetica Neue, Arial, Noto Sans, sans-serif, Apple Color Emoji,
+      Segoe UI Emoji, Segoe UI Symbol, Noto Color Emoji !important;
+    .CodeMirror-vscrollbar {
+      width: 0;
+    }
+  }
 }
 
 .CodeMirror-scroll {
