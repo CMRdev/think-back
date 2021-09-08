@@ -15,8 +15,8 @@
         tasks: {
           // '1seconds': 1000,
           // '3seconds': 3000,
-          // '5seconds': 5000,
-          '10seconds': 10000
+          '5seconds': 5000
+          // '10seconds': 10000
           // '30seconds': 30000
         },
         callBack: function (params) {

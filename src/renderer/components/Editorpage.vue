@@ -65,7 +65,8 @@ export default {
         date: 0,
         type: null
       },
-      thinkId: null
+      thinkId: null,
+      codemirror: null
     }
   },
   methods: {
@@ -132,6 +133,7 @@ export default {
   },
   mounted () {
     let id = this.$route.params.id
+    this.codemirror = this.$refs.myCm && this.$refs.myCm.codemirror
     if (id) {
       this.$thinkbackDB.think.get({ id: Number(id) }).then(record => {
         this.thinkId = record.id
@@ -146,12 +148,6 @@ export default {
   },
   created () {
     this.refreshTheme()
-  },
-  computed: {
-    // computed for codemirror reference
-    codemirror () {
-      return this.$refs.myCm && this.$refs.myCm.codemirror
-    }
   }
 }
 </script>

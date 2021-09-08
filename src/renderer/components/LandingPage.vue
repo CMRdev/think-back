@@ -1,5 +1,5 @@
 <template>
-  <div id="pager">
+  <div id="pager" @mouseenter="isHovering = true" @mouseleave="isHovering = false">
     <header>
       <div class='search-area'>
         <select v-model="filterType" @change="search(true)">
@@ -23,7 +23,7 @@
           <div class="left-title text-ellipsis" :title="selectedThink.title">{{ selectedThink.title }}</div>
           <div class="left-date">更新日期：{{ selectedThink.date | formatDate }}</div>
           <div class="left-content">
-            <codemirror ref="myCm" :value="selectedThink.content" :options="cmOptions" @ready="onCmReady">
+            <codemirror ref="myCodemirror" :value="selectedThink.content" :options="cmOptions" @ready="onCmReady">
             </codemirror>
           </div>
         </div>
@@ -110,7 +110,8 @@ export default {
         readOnly: true,
         nocursor: true
       },
-      count: 0
+      count: 0,
+      isHovering: false
     }
   },
   methods: {
@@ -258,6 +259,7 @@ export default {
       })
     },
     changeThink () {
+      if (this.isHovering) return
       if (this.thinks && this.thinks.length > this.count) {
         this.selectItem(this.thinks[this.count])
         this.count++
@@ -269,7 +271,7 @@ export default {
   mounted () {
     this.loadList()
     this.newVersion = window.localStorage.getItem('NEW_VERSION') === '1'
-    this.$EventBus.$on('10seconds', this.changeThink)
+    this.$EventBus.$on('5seconds', this.changeThink)
   },
   activated () {
     // hook for keep alive components acitved.
@@ -344,7 +346,7 @@ export default {
   .main-right {
     flex: 1;
     height: 100%;
-    border-left: 1px solid rgb(65,65,65);
+    border-left: 1px solid rgb(65, 65, 65);
     overflow: auto;
     &::-webkit-scrollbar {
       width: 0;
@@ -363,7 +365,7 @@ export default {
       min-width: 200px;
       display: flex;
       flex-direction: row;
-      border-bottom: 1px solid rgb(65,65,65);
+      // border-bottom: 1px solid rgb(65, 65, 65);
       .title {
         flex: 1;
       }
