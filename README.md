@@ -19,6 +19,13 @@ npm run buildWin
 
 ```
 
----
+#### Distribution issues
 
-This project was generated with [electron-vue](https://github.com/SimulatedGREG/electron-vue) using [vue-cli](https://github.com/vuejs/vue-cli). Documentation about the original structure can be found [here](https://simulatedgreg.gitbooks.io/electron-vue/content/index.html).
+``` bash
+1、下载github上文件失败（nsis-v.xxx.7z）：
+  可手动下载完解压放到 C:\Users\Administrator\AppData\Local\electron-builder\Cache\nsis
+2、当你的电脑用户名是中文时：
+  打开 node_module/app-builder-lib/out/targets/nsis/NsisTarget.js文件，在 executeMakensis 方法中加入我们所需的参数：args.push("-INPUTCHARSET", "UTF8"); // 中文名问题
+```
+
+---
