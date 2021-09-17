@@ -1,7 +1,7 @@
 'use strict'
 
-import { app, BrowserWindow, Menu } from 'electron'
-// import axios from 'axios'
+import { app, BrowserWindow, Menu, Notification, shell } from 'electron'
+import axios from 'axios'
 // import '../renderer/store'
 
 /**
@@ -18,22 +18,22 @@ const winURL = process.env.NODE_ENV === 'development'
   : `file://${__dirname}/index.html`
 
 function checkUpdate () { // 检查更新
-  // let currentVersion = `v${require('/package.json').version}`
-  // console.log(currentVersion)
-  // axios.get('https://gitee.com/api/v5/repos/black-flash-oreo/easy-snippets/releases/latest').then(res => {
-  //   if (currentVersion !== res.data.tag_name) {
-  //     let notification = new Notification({
-  //       title: 'New version Available',
-  //       body: `A new Version ${res.data.tag_name} is available!`,
-  //       silent: false,
-  //       timeoutType: 'default'
-  //     })
-  //     notification.on('click', () => {
-  //       shell.openExternal('https://gitee.com/black-flash-oreo/easy-snippets/releases')
-  //     })
-  //     notification.show()
-  //   }
-  // })
+  let currentVersion = `v${require('/package.json').version}`
+  console.log(currentVersion)
+  axios.get('https://gitee.com/api/v5/repos/CMRdev/think-back/releases/latest').then(res => {
+    if (currentVersion !== res.data.tag_name) {
+      let notification = new Notification({
+        title: 'New version Available',
+        body: `A new Version ${res.data.tag_name} is available!`,
+        silent: false,
+        timeoutType: 'default'
+      })
+      notification.on('click', () => {
+        shell.openExternal('https://gitee.com/CMRdev/think-back/releases')
+      })
+      notification.show()
+    }
+  })
 }
 function createWindow () {
   checkUpdate()
