@@ -21,7 +21,11 @@
         <div v-if='!searching && !selectedThink' class='tips-msg'>No records.</div>
         <div v-else style="height: 100%;">
           <div class="left-title text-ellipsis" :title="selectedThink.title">{{ selectedThink.title }}</div>
-          <div class="left-date">更新日期：{{ selectedThink.date | formatDate }}</div>
+          <div class="left-date">
+            <span class="text-ellipsis" v-show="selectedThink.description"
+              :title="selectedThink.description">描述：{{ selectedThink.description || '--' }}</span>
+            <span class="text-ellipsis">更新日期：{{ selectedThink.date | formatDate }}</span>
+          </div>
           <div class="left-content">
             <codemirror ref="myCodemirror" :value="selectedThink.content" :options="cmOptions" @ready="onCmReady">
             </codemirror>
@@ -41,7 +45,7 @@
           <template v-for='(think, index) in thinks'>
             <li :key="index" @click="selectItem(think, index)" :class="{'selected': selectedThink.id === think.id }">
               <div class='number'>{{ (currentPage - 1) * pageSize + index + 1 }}.</div>
-              <div class='title text-ellipsis'>{{ think.title || '--' }}</div>
+              <div class='title text-ellipsis' :title="think.title">{{ think.title || '--' }}</div>
               <div class='operation'>
                 <span class='operation-btn' @click="goToEditor(think.id)">Edit</span>
                 <span class='operation-btn' @click="remove(think.id)">Remove</span>
@@ -319,7 +323,18 @@ export default {
       line-height: 30px;
     }
     .left-date {
-      text-align: center;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      padding: 0 20px;
+      > span:first-child {
+        margin-right: 20px;
+        max-width: 60%;
+      }
+      > span {
+        max-width: 200px;
+      }
     }
     .left-content {
       width: 100%;
@@ -365,6 +380,7 @@ export default {
       min-width: 200px;
       display: flex;
       flex-direction: row;
+      margin-bottom: 5px;
       // border-bottom: 1px solid rgb(65, 65, 65);
       .title {
         flex: 1;
@@ -433,10 +449,10 @@ export default {
   border-radius: 3px;
 }
 
-#pager main ul li .title:hover {
-  text-decoration: underline;
-  color: var(--color-selected);
-}
+// #pager main ul li .title:hover {
+//   text-decoration: underline;
+//   color: var(--color-selected);
+// }
 
 #pager main ul li .description {
   flex: 1;
