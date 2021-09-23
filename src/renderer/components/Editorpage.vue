@@ -206,6 +206,9 @@ export default {
     .CodeMirror-vscrollbar {
       width: 0;
     }
+    .CodeMirror-hscrollbar {
+      height: 0;
+    }
   }
 }
 

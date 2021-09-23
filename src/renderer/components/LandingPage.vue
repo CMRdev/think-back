@@ -26,7 +26,7 @@
               :title="selectedThink.description">描述：{{ selectedThink.description || '--' }}</span>
             <span class="text-ellipsis">更新日期：{{ selectedThink.date | formatDate }}</span>
           </div>
-          <div class="left-content">
+          <div class="left-content" :style="`font-size:${fontSize}px;`">
             <codemirror ref="myCodemirror" :value="selectedThink.content" :options="cmOptions" @ready="onCmReady">
             </codemirror>
           </div>
@@ -59,6 +59,16 @@
       <theme-selector @themeChange='themeChange'></theme-selector>
       <div class='pager' v-if='totalRecords > 0'>
         <div class='operation' style='justify-content:start'>
+          <div class='font-selector'>
+            <span>font-size:&nbsp;</span>
+            <select v-model="fontSize">
+              <option value=14>14</option>
+              <option value=18>18</option>
+              <option value=22>22</option>
+              <option value=26>26</option>
+              <option value=30>30</option>
+            </select>
+          </div>
           <div class='sort-selector'>
             <span>Sort:&nbsp;</span>
             <select v-model="filterOrder" @change="search(true)">
@@ -115,7 +125,9 @@ export default {
         nocursor: true
       },
       count: 0,
-      isHovering: false
+      isHovering: false,
+      fontSize: 14,
+      codemirror: null
     }
   },
   methods: {
@@ -247,6 +259,8 @@ export default {
     },
     selectItem (item, index) {
       this.selectedThink = item
+      this.codemirror && this.codemirror.setOption('mode', this.selectedThink.type)
+      this.codemirror && this.codemirror.refresh()
     },
     remove (id) {
       require('electron').remote.dialog.showMessageBox({
@@ -273,6 +287,7 @@ export default {
     }
   },
   mounted () {
+    this.codemirror = this.$refs.myCodemirror && this.$refs.myCodemirror.codemirror
     this.loadList()
     this.newVersion = window.localStorage.getItem('NEW_VERSION') === '1'
     this.$EventBus.$on('5seconds', this.changeThink)
@@ -492,15 +507,35 @@ export default {
   cursor: pointer;
 }
 
+.font-selector {
+  display: flex;
+  width: auto;
+  height: 32px;
+  justify-content: center;
+  align-items: center;
+  padding: 0px 3px;
+  margin-right: 5px;
+  > span {
+    width: 61px;
+    margin-right: 3px;
+  }
+}
+
+.font-selector select {
+  outline: none;
+  border: none;
+  height: 25px;
+  width: auto;
+  line-height: 25px;
+}
+
 .sort-selector {
   display: flex;
   width: auto;
   height: 32px;
-  justify-content: space-around;
+  justify-content: center;
   align-items: center;
   padding: 0px 3px;
-  box-sizing: border-box;
-  border-radius: 5px;
   margin-right: 5px;
 }
 .sort-selector select {
